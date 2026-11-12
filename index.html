@@ -39,7 +39,7 @@ h1{position:absolute;top:calc(env(safe-area-inset-top) + 28px);margin:0;font-wei
 <button id="btn" aria-label="Play"><svg id="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
 <audio id="a" src="noise.ogg" loop preload="auto"></audio>
 <script>
-const a=document.getElementById('a'),btn=document.getElementById('btn'),ic=document.getElementById('ic'),;
+const a=document.getElementById('a'),btn=document.getElementById('btn'),ic=document.getElementById('ic');
 const PLAY='<path d="M8 5v14l11-7z"/>',PAUSE='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
 function ui(){const p=!a.paused;btn.classList.toggle('on',p);ic.innerHTML=p?PAUSE:PLAY;
  btn.setAttribute('aria-label',p?'Pause':'Play');
