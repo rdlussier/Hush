@@ -37,21 +37,41 @@ h1{position:absolute;top:calc(env(safe-area-inset-top) + 28px);margin:0;font-wei
 <div class="mist"></div>
 <h1>Hush</h1>
 <button id="btn" aria-label="Play"><svg id="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-<audio id="a" src="noise.ogg" loop preload="auto"></audio>
+<audio id="a"></audio>
 <script>
 const a=document.getElementById('a'),btn=document.getElementById('btn'),ic=document.getElementById('ic');
 const PLAY='<path d="M8 5v14l11-7z"/>',PAUSE='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
 function ui(){const p=!a.paused;btn.classList.toggle('on',p);ic.innerHTML=p?PAUSE:PLAY;
  btn.setAttribute('aria-label',p?'Pause':'Play');
  if('mediaSession' in navigator)navigator.mediaSession.playbackState=p?'playing':'paused'}
-function toggle(){a.paused?a.play().catch(()=>{}):a.pause()}
+// Gapless loop: decode the file and loop an AudioBuffer (no gap at the seam),
+// then feed it into the <audio> element so Android treats it as media (lock screen, background).
+const TRACK='noise.ogg';
+let ctx,buf,src,dest,fallback=false;
+async function setup(){
+ try{
+  const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC();
+  const r=await fetch(TRACK);buf=await ctx.decodeAudioData(await r.arrayBuffer());
+  dest=ctx.createMediaStreamDestination();a.srcObject=dest.stream;
+ }catch(e){fallback=true;a.loop=true;a.src=TRACK}
+}
+const ready=setup();
+async function start(){
+ await ready;
+ if(fallback){return a.play()}
+ await ctx.resume();
+ src=ctx.createBufferSource();src.buffer=buf;src.loop=true;src.connect(dest);src.start();
+ return a.play();
+}
+function stop(){a.pause();if(src){try{src.stop()}catch(e){}src=null}}
+function toggle(){a.paused?start().catch(()=>{}):stop()}
 btn.addEventListener('click',toggle);
 a.addEventListener('play',ui);a.addEventListener('pause',ui);
 if('mediaSession' in navigator){
  navigator.mediaSession.metadata=new MediaMetadata({title:'Hush',artist:'White noise',
   artwork:[{src:'icons/icon-192.png',sizes:'192x192',type:'image/png'},{src:'icons/icon-512.png',sizes:'512x512',type:'image/png'}]});
- navigator.mediaSession.setActionHandler('play',()=>a.play());
- navigator.mediaSession.setActionHandler('pause',()=>a.pause());
+ navigator.mediaSession.setActionHandler('play',()=>start().catch(()=>{}));
+ navigator.mediaSession.setActionHandler('pause',stop);
  for(const k of ['previoustrack','nexttrack','seekbackward','seekforward','seekto'])
   try{navigator.mediaSession.setActionHandler(k,null)}catch(e){}
 }
