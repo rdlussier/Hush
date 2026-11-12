@@ -44,24 +44,27 @@ const PLAY='<path d="M8 5v14l11-7z"/>',PAUSE='<path d="M6 5h4v14H6zM14 5h4v14h-4
 function ui(){const p=!a.paused;btn.classList.toggle('on',p);ic.innerHTML=p?PAUSE:PLAY;
  btn.setAttribute('aria-label',p?'Pause':'Play');
  if('mediaSession' in navigator)navigator.mediaSession.playbackState=p?'playing':'paused'}
-// Gapless loop: decode the file and loop an AudioBuffer (no gap at the seam),
-// then feed it into the <audio> element so Android treats it as media (lock screen, background).
+// Gapless loop: decode the file and loop an AudioBuffer (no seam gap).
+// A very quiet real <audio> file plays alongside so Android shows the notification/lock-screen controls
+// and keeps playing with the screen off.
 const TRACK='noise.ogg';
-let ctx,buf,src,dest,fallback=false;
+let ctx,buf,src,fallback=false;
+a.src='keepalive.ogg';a.loop=true;
 async function setup(){
  try{
   const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC();
   const r=await fetch(TRACK);buf=await ctx.decodeAudioData(await r.arrayBuffer());
-  dest=ctx.createMediaStreamDestination();a.srcObject=dest.stream;
- }catch(e){fallback=true;a.loop=true;a.src=TRACK}
+ }catch(e){fallback=true;a.src=TRACK}
 }
 const ready=setup();
 async function start(){
+ const p=a.play();
  await ready;
- if(fallback){return a.play()}
- await ctx.resume();
- src=ctx.createBufferSource();src.buffer=buf;src.loop=true;src.connect(dest);src.start();
- return a.play();
+ if(!fallback){
+  await ctx.resume();
+  src=ctx.createBufferSource();src.buffer=buf;src.loop=true;src.connect(ctx.destination);src.start();
+ }
+ return p;
 }
 function stop(){a.pause();if(src){try{src.stop()}catch(e){}src=null}}
 function toggle(){a.paused?start().catch(()=>{}):stop()}
