@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hush</title>
+<meta name="theme-color" content="#0b1612">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+:root{--bg:#0b1612;--moss:#8ec9a0;--glow:rgba(110,200,150,.35);--text:#a9c9b5}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(ellipse at 50% 100%,#13261e 0,var(--bg) 65%);color:var(--text);
+ font-family:Georgia,"Times New Roman",serif;display:flex;flex-direction:column;align-items:center;
+ justify-content:center;overflow:hidden;user-select:none;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)}
+h1{position:absolute;top:calc(env(safe-area-inset-top) + 28px);margin:0;font-weight:normal;
+ letter-spacing:.35em;text-transform:lowercase;font-size:1.1rem;opacity:.7}
+.mist{position:fixed;inset:-20%;pointer-events:none;opacity:.5;
+ background:radial-gradient(40% 30% at 20% 30%,rgba(140,200,170,.10),transparent),
+ radial-gradient(45% 35% at 80% 70%,rgba(140,200,170,.09),transparent);animation:drift 40s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate(6%,-4%) scale(1.1)}}
+#btn{width:min(78vw,58vh);aspect-ratio:1;border-radius:50%;border:0;cursor:pointer;
+ background:radial-gradient(circle at 35% 30%,#a8dcb8,var(--moss) 55%,#6aa883);
+ box-shadow:0 0 40px var(--glow),0 0 0 14px rgba(142,201,160,.08);
+ display:grid;place-items:center;transition:transform .15s}
+#btn:active{transform:scale(.97)}
+#btn svg{width:42%;height:42%;fill:#0b1612}
+#btn.on{animation:breathe 5s ease-in-out infinite}
+@keyframes breathe{0%,100%{box-shadow:0 0 40px var(--glow),0 0 0 14px rgba(142,201,160,.08)}
+ 50%{box-shadow:0 0 90px rgba(110,200,150,.55),0 0 0 30px rgba(142,201,160,.04)}}
+#status{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 32px);font-size:.9rem;opacity:.55;letter-spacing:.1em}
+@media(prefers-reduced-motion:reduce){#btn.on,.mist{animation:none}}
+</style>
+</head>
+<body>
+<div class="mist"></div>
+<h1>hush</h1>
+<button id="btn" aria-label="Play"><svg id="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+<div id="status">tap to play</div>
+<audio id="a" src="noise.ogg" loop preload="auto"></audio>
+<script>
+const a=document.getElementById('a'),btn=document.getElementById('btn'),ic=document.getElementById('ic'),st=document.getElementById('status');
+const PLAY='<path d="M8 5v14l11-7z"/>',PAUSE='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
+function ui(){const p=!a.paused;btn.classList.toggle('on',p);ic.innerHTML=p?PAUSE:PLAY;
+ btn.setAttribute('aria-label',p?'Pause':'Play');st.textContent=p?'playing':'tap to play';
+ if('mediaSession' in navigator)navigator.mediaSession.playbackState=p?'playing':'paused'}
+function toggle(){a.paused?a.play().catch(()=>{}):a.pause()}
+btn.addEventListener('click',toggle);
+a.addEventListener('play',ui);a.addEventListener('pause',ui);
+if('mediaSession' in navigator){
+ navigator.mediaSession.metadata=new MediaMetadata({title:'Hush',artist:'White noise',
+  artwork:[{src:'icons/icon-192.png',sizes:'192x192',type:'image/png'},{src:'icons/icon-512.png',sizes:'512x512',type:'image/png'}]});
+ navigator.mediaSession.setActionHandler('play',()=>a.play());
+ navigator.mediaSession.setActionHandler('pause',()=>a.pause());
+ for(const k of ['previoustrack','nexttrack','seekbackward','seekforward','seekto'])
+  try{navigator.mediaSession.setActionHandler(k,null)}catch(e){}
+}
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+ui();
+</script>
+</body>
+</html>
