@@ -1,6 +1,6 @@
-const V='hush-v2';
+const V='hush-v3';
 const FILES=['./','index.html','manifest.webmanifest','noise.ogg','icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});
+self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>Promise.all(FILES.map(f=>fetch(new Request(f,{cache:'reload'})).then(r=>c.put(f==='./'?'./':f,r))))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 async function ranged(req,res){
   const m=/bytes=(\d*)-(\d*)/.exec(req.headers.get('range'));
@@ -18,7 +18,7 @@ self.addEventListener('fetch',e=>{
     if(!res){try{res=await fetch(r);return res}catch(err){return caches.match('index.html')}}
     if(r.headers.get('range')&&res.status===200)return ranged(r,res);
     // refresh in background
-    if(!r.headers.get('range'))fetch(r).then(n=>{if(n.ok)caches.open(V).then(c=>c.put(r,n))}).catch(()=>{});
+    if(!r.headers.get('range'))fetch(r,{cache:'no-cache'}).then(n=>{if(n.ok)caches.open(V).then(c=>c.put(r,n))}).catch(()=>{});
     return res;
   })());
 });

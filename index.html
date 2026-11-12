@@ -55,7 +55,7 @@ if('mediaSession' in navigator){
  for(const k of ['previoustrack','nexttrack','seekbackward','seekforward','seekto'])
   try{navigator.mediaSession.setActionHandler(k,null)}catch(e){}
 }
-if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+if('serviceWorker' in navigator){const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js');navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&a.paused)location.reload()})}
 ui();
 </script>
 </body>
