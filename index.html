@@ -58,13 +58,12 @@ async function setup(){
 }
 const ready=setup();
 async function start(){
- const p=a.play();
  await ready;
+ await a.play();
  if(!fallback){
   await ctx.resume();
-  src=ctx.createBufferSource();src.buffer=buf;src.loop=true;src.connect(ctx.destination);src.start();
+  if(!src){src=ctx.createBufferSource();src.buffer=buf;src.loop=true;src.connect(ctx.destination);src.start()}
  }
- return p;
 }
 function stop(){a.pause();if(src){try{src.stop()}catch(e){}src=null}}
 function toggle(){a.paused?start().catch(()=>{}):stop()}
@@ -80,6 +79,8 @@ if('mediaSession' in navigator){
 }
 if('serviceWorker' in navigator){const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js');navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&a.paused)location.reload()})}
 ui();
+// Try to auto-play on start. Chrome allows this for installed apps; if blocked, stay paused.
+(async()=>{try{await start();if(!fallback&&ctx.state!=='running')stop()}catch(e){stop()}})();
 </script>
 </body>
 </html>
